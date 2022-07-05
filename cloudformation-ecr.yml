@@ -1,0 +1,115 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Template for building a Docker image and deploying it to an ECR repository.
+Parameters:
+  Repository:
+    Type: String
+    Default: cr-trojan23/ecr-pipline
+    Description: Git repository to use.
+  Branch:
+    Type: String
+    Default: main
+    Description: Git branch to use.
+Metadata:
+  AWS:CloudFormation::Interface:
+    ParameterGroups:
+      - Label: Git
+        Parameters:
+          - Repository
+          - Branch
+Resources:
+  CodeStarConnection:
+    Type: 'AWS::CodeStarConnections::Connection'
+    Properties:
+      ConnectionName: gh-ecr-connection
+      ProviderType: GitHub
+      Tags:
+        - Key: 'Name'
+          Value: 'github-ecr-connection'
+        - Key: 'CreatedBy'
+          Value: 'AWS CFN'
+  ArtifactBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: artifacts-bucket-v1
+      VersioningConfiguration:
+        Status: Enabled
+      Tags:
+        - Key: 'Name'
+          Value: 'artifacts-bucket-v1'
+        - Key: 'CreatedBy'
+          Value: 'AWS CFN'
+  Pipeline:
+      Type: AWS::CodePipeline::Pipeline
+      Properties:
+        Name: ecr-pipeline
+        RoleArn: !GetAtt PipelineRole.Arn
+        ArtifactStore:
+          Type: S3
+          Location: !Ref ArtifactBucket
+        Stages:
+          - Name: Get Source from github
+            Actions:
+              - Name: Source
+                ActionTypeId:
+                  Category: Source
+                  Owner: AWS
+                  Provider: CodeStarSourceConnection
+                  Version: 1
+                OutputArtifacts:
+                  - Name: SourceOutput
+                Configuration:
+                  ConnectionArn: !Ref CodeStarConnection
+                  FullRepositoryId: !Ref Repository
+                  BranchName: !Ref Branch
+                RunOrder: 1
+          - Name: Build Docker Image
+            Actions:
+              - Name: Build
+                ActionTypeId:
+                  Category: Build
+                  Owner: AWS
+                  Provider: CodeBuild
+                  Version: 1
+                InputArtifacts:
+                  - Name: SourceOutput
+                OutputArtifacts:
+                  - Name: BuildOutput
+                Configuration:
+                  ProjectName: !Ref BuildProject
+                RunOrder: 1
+        Tags:
+          - Key: 'Name'
+            Value: 'ecr-pipeline'
+          - Key: 'CreatedBy'
+            Value: 'AWS CFN'
+  
+  BuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: ecr-build-project
+      Artifacts:
+        Type: CODEPIPELINE
+        Name: 'Artifacts'
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
+        Type: LINUX_CONTAINER
+      ServiceRole: !GetAtt CodeBuildServiceRole
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: !Sub |
+          version : 0.2
+          phases:
+            install:
+              commands:
+                - yum install docker -y
+            pre_build:
+              commands:
+                # sign into ECR
+                - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin
+            build:
+              commands:
+                - docker build -t ecr-image .
+            post_build:
+              commands:
+                - docker push ecr-image
