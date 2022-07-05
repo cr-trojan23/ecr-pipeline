@@ -3,7 +3,7 @@ Description: Template for building a Docker image and deploying it to an ECR rep
 Parameters:
   GithubRepository:
     Type: String
-    Default: cr-trojan23/ecr-pipline
+    Default: cr-trojan23/ecr-pipeline
     Description: Git repository to use.
   Branch:
     Type: String
@@ -11,7 +11,7 @@ Parameters:
     Description: Git branch to use.
   ImageRepository:
     Type: String
-    Default: Custom-AmazonLinux2
+    Default: custom-amazonlinux2
     Description: ECR repository to use.
   ImageTag:
     Type: String
@@ -83,7 +83,7 @@ Resources:
           Type: S3
           Location: !Ref ArtifactBucket
         Stages:
-          - Name: Get Source from github
+          - Name: Get-Source-from-github
             Actions:
               - Name: Source
                 ActionTypeId:
@@ -98,7 +98,7 @@ Resources:
                   FullRepositoryId: !Ref GithubRepository
                   BranchName: !Ref Branch
                 RunOrder: 1
-          - Name: Build Docker Image
+          - Name: Build-Docker-Image
             Actions:
               - Name: Build
                 ActionTypeId:
@@ -138,7 +138,7 @@ Resources:
             Value: !Ref ImageTag
           - Name: REGION
             Value: !Ref Region
-      ServiceRole: !GetAtt CodeBuildServiceRole
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
       Source:
         Type: CODEPIPELINE
         BuildSpec: buildspec.yml
