@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Template for building a Docker image and deploying it to an ECR repository.
 Parameters:
-  Repository:
+  GithubRepository:
     Type: String
     Default: cr-trojan23/ecr-pipline
     Description: Git repository to use.
@@ -9,6 +9,22 @@ Parameters:
     Type: String
     Default: main
     Description: Git branch to use.
+  ImageRepository:
+    Type: String
+    Default: Custom-AmazonLinux2
+    Description: ECR repository to use.
+  ImageTag:
+    Type: String
+    Default: latest
+    Description: ECR image tag to use.
+  Region:
+    Type: String
+    Default: ap-south-1
+    Description: AWS region to use.
+  AWSAccountId:
+    Type: String
+    Default: '314936303691'
+    Description: AWS account ID to use.
 Metadata:
   AWS:CloudFormation::Interface:
     ParameterGroups:
@@ -16,6 +32,14 @@ Metadata:
         Parameters:
           - Repository
           - Branch
+      - Label: ECR
+        Parameters:
+          - ImageRepository
+          - ImageTag
+      - Label: AWS  
+        Parameters:
+          - Region
+          - AWSAccountId
 Resources:
   CodeStarConnection:
     Type: 'AWS::CodeStarConnections::Connection'
@@ -38,6 +62,18 @@ Resources:
           Value: 'artifacts-bucket-v1'
         - Key: 'CreatedBy'
           Value: 'AWS CFN'
+  ECRRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Ref ImageRepository
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      ImageTagMutability: MUTABLE
+      Tags:
+        - Key: 'Name'
+          Value: !Ref ImageRepository
+        - Key: 'CreatedBy'
+          Value: 'AWS CFN'
   Pipeline:
       Type: AWS::CodePipeline::Pipeline
       Properties:
@@ -54,12 +90,12 @@ Resources:
                   Category: Source
                   Owner: AWS
                   Provider: CodeStarSourceConnection
-                  Version: 1
+                  Version: '1'
                 OutputArtifacts:
                   - Name: SourceOutput
                 Configuration:
                   ConnectionArn: !Ref CodeStarConnection
-                  FullRepositoryId: !Ref Repository
+                  FullRepositoryId: !Ref GithubRepository
                   BranchName: !Ref Branch
                 RunOrder: 1
           - Name: Build Docker Image
@@ -69,7 +105,7 @@ Resources:
                   Category: Build
                   Owner: AWS
                   Provider: CodeBuild
-                  Version: 1
+                  Version: '1'
                 InputArtifacts:
                   - Name: SourceOutput
                 OutputArtifacts:
@@ -82,7 +118,6 @@ Resources:
             Value: 'ecr-pipeline'
           - Key: 'CreatedBy'
             Value: 'AWS CFN'
-  
   BuildProject:
     Type: AWS::CodeBuild::Project
     Properties:
@@ -94,22 +129,56 @@ Resources:
         ComputeType: BUILD_GENERAL1_SMALL
         Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
         Type: LINUX_CONTAINER
+        EnvironmentVariables:
+          - Name: AWS_ACCOUNT_ID
+            Value: !Ref AWSAccountId
+          - Name: IMAGE_REPO_NAME
+            Value: !Ref ImageRepository
+          - Name: IMAGE_TAG
+            Value: !Ref ImageTag
+          - Name: REGION
+            Value: !Ref Region
       ServiceRole: !GetAtt CodeBuildServiceRole
       Source:
         Type: CODEPIPELINE
-        BuildSpec: !Sub |
-          version : 0.2
-          phases:
-            install:
-              commands:
-                - yum install docker -y
-            pre_build:
-              commands:
-                # sign into ECR
-                - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin
-            build:
-              commands:
-                - docker build -t ecr-image .
-            post_build:
-              commands:
-                - docker push ecr-image
+        BuildSpec: buildspec.yml
+      Tags:
+        - Key: 'Name'
+          Value: 'ecr-build-project'
+        - Key: 'CreatedBy'
+          Value: 'AWS CFN'
+  PipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          Effect: Allow
+          Principal:
+            Service: codepipeline.amazonaws.com
+          Action: sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+      Tags:
+        - Key: 'Name'
+          Value: 'PipelineRole'
+        - Key: 'CreatedBy'
+          Value: 'AWS CFN'
+  CodeBuildServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          Effect: Allow
+          Principal:
+            Service: codebuild.amazonaws.com
+          Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+      Tags:
+        - Key: 'Name'
+          Value: 'CodeBuildServiceRole'
+        - Key: 'CreatedBy'
+          Value: 'AWS CFN'
