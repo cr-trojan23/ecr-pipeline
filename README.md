@@ -1,0 +1,1 @@
+AWS Cloudformation template to create an AWS Codepipeline pipeline with githubv2 as the source and CodeBuild as Build Stage to build a custom docker image from the Dockerfile in this repository, and push the image to Aamzon ECR after building it.
