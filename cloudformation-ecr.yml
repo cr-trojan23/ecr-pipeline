@@ -123,8 +123,6 @@ Resources:
         Type: LINUX_CONTAINER
         PrivilegedMode: true
         EnvironmentVariables:
-          - Name: AWS_ACCOUNT_ID
-            Value: !Ref AWSAccountId
           - Name: IMAGE_REPO_NAME
             Value: !Ref ImageRepository
           - Name: IMAGE_TAG
