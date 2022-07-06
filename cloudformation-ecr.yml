@@ -63,9 +63,12 @@ Resources:
         - Key: 'CreatedBy'
           Value: 'AWS CFN'
   ECRRepository:
-    Type: AWS::ECR::PublicRepository
+    Type: AWS::ECR::Repository
     Properties:
       RepositoryName: !Ref ImageRepository
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      ImageTagMutability: MUTABLE
       Tags:
         - Key: 'Name'
           Value: !Ref ImageRepository
