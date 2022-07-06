@@ -21,10 +21,6 @@ Parameters:
     Type: String
     Default: us-east-1
     Description: AWS region to use.
-  AWSAccountId:
-    Type: String
-    Default: "314936303691"
-    Description: AWS account ID to use.
 Metadata:
   AWS:CloudFormation::Interface:
     ParameterGroups:
@@ -39,7 +35,6 @@ Metadata:
       - Label: AWS
         Parameters:
           - Region
-          - AWSAccountId
 Resources:
   CodeStarConnection:
     Type: "AWS::CodeStarConnections::Connection"
