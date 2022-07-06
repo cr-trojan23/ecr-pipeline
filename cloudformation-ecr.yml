@@ -19,7 +19,7 @@ Parameters:
     Description: ECR image tag to use.
   Region:
     Type: String
-    Default: ap-south-1
+    Default: us-east-1
     Description: AWS region to use.
   AWSAccountId:
     Type: String
@@ -63,12 +63,9 @@ Resources:
         - Key: "CreatedBy"
           Value: "AWS CFN"
   ECRRepository:
-    Type: AWS::ECR::Repository
+    Type: AWS::ECR::PublicRepository
     Properties:
       RepositoryName: !Ref ImageRepository
-      ImageScanningConfiguration:
-        ScanOnPush: true
-      ImageTagMutability: MUTABLE
       Tags:
         - Key: "Name"
           Value: !Ref ImageRepository
