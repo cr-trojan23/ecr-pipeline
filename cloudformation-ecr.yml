@@ -1,4 +1,4 @@
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
 Description: Template for building a Docker image and deploying it to an ECR repository.
 Parameters:
   GithubRepository:
@@ -23,7 +23,7 @@ Parameters:
     Description: AWS region to use.
   AWSAccountId:
     Type: String
-    Default: '314936303691'
+    Default: "314936303691"
     Description: AWS account ID to use.
 Metadata:
   AWS:CloudFormation::Interface:
@@ -36,21 +36,21 @@ Metadata:
         Parameters:
           - ImageRepository
           - ImageTag
-      - Label: AWS  
+      - Label: AWS
         Parameters:
           - Region
           - AWSAccountId
 Resources:
   CodeStarConnection:
-    Type: 'AWS::CodeStarConnections::Connection'
+    Type: "AWS::CodeStarConnections::Connection"
     Properties:
       ConnectionName: gh-ecr-connection
       ProviderType: GitHub
       Tags:
-        - Key: 'Name'
-          Value: 'github-ecr-connection'
-        - Key: 'CreatedBy'
-          Value: 'AWS CFN'
+        - Key: "Name"
+          Value: "github-ecr-connection"
+        - Key: "CreatedBy"
+          Value: "AWS CFN"
   ArtifactBucket:
     Type: AWS::S3::Bucket
     Properties:
@@ -58,10 +58,10 @@ Resources:
       VersioningConfiguration:
         Status: Enabled
       Tags:
-        - Key: 'Name'
-          Value: 'artifacts-bucket-v1'
-        - Key: 'CreatedBy'
-          Value: 'AWS CFN'
+        - Key: "Name"
+          Value: "artifacts-bucket-v1"
+        - Key: "CreatedBy"
+          Value: "AWS CFN"
   ECRRepository:
     Type: AWS::ECR::Repository
     Properties:
@@ -70,61 +70,61 @@ Resources:
         ScanOnPush: true
       ImageTagMutability: MUTABLE
       Tags:
-        - Key: 'Name'
+        - Key: "Name"
           Value: !Ref ImageRepository
-        - Key: 'CreatedBy'
-          Value: 'AWS CFN'
+        - Key: "CreatedBy"
+          Value: "AWS CFN"
   Pipeline:
-      Type: AWS::CodePipeline::Pipeline
-      Properties:
-        Name: ecr-pipeline
-        RoleArn: !GetAtt PipelineRole.Arn
-        ArtifactStore:
-          Type: S3
-          Location: !Ref ArtifactBucket
-        Stages:
-          - Name: Get-Source-from-github
-            Actions:
-              - Name: Source
-                ActionTypeId:
-                  Category: Source
-                  Owner: AWS
-                  Provider: CodeStarSourceConnection
-                  Version: '1'
-                OutputArtifacts:
-                  - Name: SourceOutput
-                Configuration:
-                  ConnectionArn: !Ref CodeStarConnection
-                  FullRepositoryId: !Ref GithubRepository
-                  BranchName: !Ref Branch
-                RunOrder: 1
-          - Name: Build-Docker-Image
-            Actions:
-              - Name: Build
-                ActionTypeId:
-                  Category: Build
-                  Owner: AWS
-                  Provider: CodeBuild
-                  Version: '1'
-                InputArtifacts:
-                  - Name: SourceOutput
-                OutputArtifacts:
-                  - Name: BuildOutput
-                Configuration:
-                  ProjectName: !Ref BuildProject
-                RunOrder: 1
-        Tags:
-          - Key: 'Name'
-            Value: 'ecr-pipeline'
-          - Key: 'CreatedBy'
-            Value: 'AWS CFN'
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: ecr-pipeline
+      RoleArn: !GetAtt PipelineRole.Arn
+      ArtifactStore:
+        Type: S3
+        Location: !Ref ArtifactBucket
+      Stages:
+        - Name: Get-Source-from-github
+          Actions:
+            - Name: Source
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: CodeStarSourceConnection
+                Version: "1"
+              OutputArtifacts:
+                - Name: SourceOutput
+              Configuration:
+                ConnectionArn: !Ref CodeStarConnection
+                FullRepositoryId: !Ref GithubRepository
+                BranchName: !Ref Branch
+              RunOrder: 1
+        - Name: Build-Docker-Image
+          Actions:
+            - Name: Build
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: "1"
+              InputArtifacts:
+                - Name: SourceOutput
+              OutputArtifacts:
+                - Name: BuildOutput
+              Configuration:
+                ProjectName: !Ref BuildProject
+              RunOrder: 1
+      Tags:
+        - Key: "Name"
+          Value: "ecr-pipeline"
+        - Key: "CreatedBy"
+          Value: "AWS CFN"
   BuildProject:
     Type: AWS::CodeBuild::Project
     Properties:
       Name: ecr-build-project
       Artifacts:
         Type: CODEPIPELINE
-        Name: 'Artifacts'
+        Name: "Artifacts"
       Environment:
         ComputeType: BUILD_GENERAL1_SMALL
         Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
@@ -144,10 +144,10 @@ Resources:
         Type: CODEPIPELINE
         BuildSpec: buildspec.yml
       Tags:
-        - Key: 'Name'
-          Value: 'ecr-build-project'
-        - Key: 'CreatedBy'
-          Value: 'AWS CFN'
+        - Key: "Name"
+          Value: "ecr-build-project"
+        - Key: "CreatedBy"
+          Value: "AWS CFN"
   PipelineRole:
     Type: AWS::IAM::Role
     Properties:
@@ -162,10 +162,10 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AdministratorAccess
       Tags:
-        - Key: 'Name'
-          Value: 'PipelineRole'
-        - Key: 'CreatedBy'
-          Value: 'AWS CFN'
+        - Key: "Name"
+          Value: "PipelineRole"
+        - Key: "CreatedBy"
+          Value: "AWS CFN"
   CodeBuildServiceRole:
     Type: AWS::IAM::Role
     Properties:
@@ -179,7 +179,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AdministratorAccess
       Tags:
-        - Key: 'Name'
-          Value: 'CodeBuildServiceRole'
-        - Key: 'CreatedBy'
-          Value: 'AWS CFN'
+        - Key: "Name"
+          Value: "CodeBuildServiceRole"
+        - Key: "CreatedBy"
+          Value: "AWS CFN"
