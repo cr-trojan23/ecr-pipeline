@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Get all the dependencies, utilities
-yum install gcc openssl-devel bzip2-devel libffi-devel wget tar xz make cmake unzip gzip -y
+yum install gcc openssl-devel bzip2-devel libffi-devel wget tar xz make cmake unzip find gzip -y
 touch ~/.bashrc
 
 # Install Python3.9
@@ -19,8 +19,7 @@ export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
 source ~/.bashrc
-nvm install 16
-nvm use 16
+nvm install 16 && nvm use 16
 echo "[INFO] Nodejs 16:latest Installed Successfully"
 echo "export NVM_DIR=\"$HOME/.nvm\"" >> ~/.bashrc
 echo "[ -s \"$NVM_DIR/nvm.sh\" ] && \\. \"$NVM_DIR/nvm.sh\"" >> ~/.bashrc
