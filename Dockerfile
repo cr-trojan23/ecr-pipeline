@@ -1,4 +1,4 @@
-FROM public.ecr.aws/amazonlinux/amazonlinux:2022
+FROM public.ecr.aws/amazonlinux/amazonlinux:latest
 
 LABEL Description="Custom AmazonLinux2 Image with Python3.9, Nodejs 16, AWS SAM, AWS CLI and Terraform"
 
