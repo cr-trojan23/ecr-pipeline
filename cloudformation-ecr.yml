@@ -49,12 +49,12 @@ Resources:
   ArtifactBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: artifacts-bucket-v1
+      BucketName: pipeline-bucket-v1
       VersioningConfiguration:
         Status: Enabled
       Tags:
         - Key: "Name"
-          Value: "artifacts-bucket-v1"
+          Value: "pipeline-bucket-v1"
         - Key: "CreatedBy"
           Value: "AWS CFN"
   ECRRepository:
