@@ -201,8 +201,8 @@ Resources:
       EventPattern:
         detail:
           action-type: [PUSH]
-          image-tag: [latest]
-          repository-name: [cwe-test]
+          image-tag: [!Ref ImageTag]
+          repository-name: [!Ref ECRRepository]
           result: [SUCCESS]
         detail-type: [ECR Image Action]
         source: [aws.ecr]
