@@ -194,7 +194,7 @@ Resources:
               -
                 Effect: Allow
                 Action: codepipeline:StartPipelineExecution
-                Resource: !Sub arn:aws:codepipeline:${Region}:${AWSAccountId}:!Ref Pipeline
+                Resource: !Sub arn:aws:codepipeline:${Region}:${AWSAccountId}:${Pipeline}
   AmazonCloudWatchEventRule:
     Type: 'AWS::Events::Rule'
     Properties:
@@ -207,7 +207,7 @@ Resources:
         detail-type: [ECR Image Action]
         source: [aws.ecr]
       Targets:
-        - Arn: !Sub arn:aws:codepipeline:${Region}:${AWSAccountId}:!Ref Pipeline
+        - Arn: !Sub arn:aws:codepipeline:${Region}:${AWSAccountId}:${Pipeline}
           RoleArn: !GetAtt 
             - AmazonCloudWatchEventRole
             - Arn
