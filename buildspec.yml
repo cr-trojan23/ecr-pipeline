@@ -8,13 +8,13 @@ phases:
   pre_build:
     commands:
       - echo "Login to ECR"
-      - aws ecr-public get-login-password --region $REGION | docker login --username AWS --password-stdin public.ecr.aws
+      - aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin public.ecr.aws
   build:
     commands:
       - echo "Building image..."
       - docker build -t $IMAGE_REPO_NAME:$IMAGE_TAG .
-      - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $(aws ecr describe-repositories --region ap-south-1 | grep repositoryUri | awk '{ print $2}' | tr -d "\"" | tr -d ","):$IMAGE_TAG
+      - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $(aws ecr describe-repositories --region $REGION | grep repositoryUri | awk '{ print $2}' | tr -d "\"" | tr -d ","):$IMAGE_TAG
   post_build:
     commands:
       - echo "Pushing image to ECR"
-      - docker push $(aws ecr describe-repositories --region ap-south-1 | grep repositoryUri | awk '{ print $2}' | tr -d "\"" | tr -d ","):$IMAGE_TAG
+      - docker push $(aws ecr describe-repositories --region $REGION | grep repositoryUri | awk '{ print $2}' | tr -d "\"" | tr -d ","):$IMAGE_TAG
