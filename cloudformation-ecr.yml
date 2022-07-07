@@ -23,7 +23,7 @@ Parameters:
     Description: AWS region to use.
   AWSAccountId:
     Type: String
-    Default: 314936303691
+    Default: 123456789012
     Description: AWS account ID to use.
 Metadata:
   AWS:CloudFormation::Interface:
@@ -66,6 +66,17 @@ Resources:
     Type: AWS::ECR::Repository
     Properties:
       RepositoryName: !Ref ImageRepository
+      RepositoryPolicyText: 
+        Version: '2012-10-17'
+        Statement:
+        - Sid: CodeBuildAccess
+          Effect: Allow
+          Principal:
+            Service: codebuild.amazonaws.com
+          Action:
+          - ecr:BatchGetImage
+          - ecr:GetDownloadUrlForLayer
+          - ecr:BatchCheckLayerAvailability
       Tags:
         - Key: "Name"
           Value: !Ref ImageRepository

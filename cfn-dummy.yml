@@ -13,6 +13,10 @@ Parameters:
     Type: String
     Default: us-east-1
     Description: "AWS region to use"
+  TargetS3Bucket:
+    Type: String
+    Default: "ecr-image-result-bucket"
+    Description: "S3 bucket to use"
 Metadata:
   AWS:CloudFormation::Interface:
     ParameterGroups:
@@ -24,10 +28,10 @@ Metadata:
         Parameters:
           - Region
 Resources:
-  TargetS3Bucket:
+  S3Target:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: "ecr-image-result-bucket"
+      BucketName: !Ref TargetS3Bucket
       Tags:
         - Key: "Name"
           Value: "ECR-Image-Result-bucket"
@@ -95,12 +99,33 @@ Resources:
         Name: "Artifacts"
       Environment:
         ComputeType: BUILD_GENERAL1_SMALL
-        Image: public.ecr.aws/v7l7f0x0/custom-amazonlinux2:latest
+        Image: 314936303691.dkr.ecr.ap-south-1.amazonaws.com/custom-amazonlinux2:latest
         Type: LINUX_CONTAINER
         PrivilegedMode: true
+        EnvironmentVariables:
+          - Name: "TARGET_S3_BUCKET"
+            Value: !Ref TargetS3Bucket
       Source:
         Type: CODEPIPELINE
-        BuildSpec: buildspec-dummy.yml
+        BuildSpec: !Sub | 
+          version: 0.2
+          phases:
+            pre_build:
+              commands:
+                - touch result.txt
+                - cat ~/.bashrc
+            build:
+              commands:
+                - python3.9 --version >> result.txt
+                - node --version >> result.txt
+                - npm --version >> result.txt
+                - aws --version >> result.txt
+                - sam --version >> result.txt
+                - terraform --version >> result.txt
+            post_build:
+              commands:
+                - echo "Uploading result.txt to S3"
+                - aws s3api put-object --bucket $TARGET_S3_BUCKET --key result.txt --body result.txt
       ServiceRole: !GetAtt CodeBuildServiceRole.Arn
       Tags:
         - Key: "Name"
