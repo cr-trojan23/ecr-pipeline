@@ -1,0 +1,17 @@
+version: 0.2
+phases:
+  pre_build:
+    commands:
+      - touch result.txt
+  build:
+    commands:
+      - python3.9 --version >> result.txt
+      - node --version >> result.txt
+      - npm --version >> result.txt
+      - aws --version >> result.txt
+      - sam --version >> result.txt
+      - terraform --version >> result.txt
+  post_build:
+    commands:
+      - echo "Uploading result.txt to S3"
+      - aws s3 cp result.txt s3://ECR-Image-Result-bucket/result.txt

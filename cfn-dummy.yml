@@ -1,96 +1,73 @@
-AWSTemplateFormatVersion: "2010-09-09"
-Description: Template for building a Docker image and deploying it to an ECR repository.
+AWSTemplateFormatVersion: '2010-09-09'
+Description: "CloudFormation template for testing ECR image"
 Parameters:
-  GithubRepository:
-    Type: String
-    Default: cr-trojan23/ecr-pipeline
-    Description: Git repository to use.
-  Branch:
-    Type: String
-    Default: main
-    Description: Git branch to use.
-  ImageRepository:
+  ECRRepository:
     Type: String
     Default: custom-amazonlinux2
-    Description: ECR repository to use.
+    Description: "ECR repository to use"
   ImageTag:
     Type: String
     Default: latest
-    Description: ECR image tag to use.
+    Description: "ECR image tag to use"
   Region:
     Type: String
-    Default: ap-south-1
-    Description: AWS region to use.
+    Default: us-east-1
+    Description: "AWS region to use"
 Metadata:
   AWS:CloudFormation::Interface:
     ParameterGroups:
-      - Label: Git
-        Parameters:
-          - GithubRepository
-          - Branch
       - Label: ECR
         Parameters:
-          - ImageRepository
+          - ECRRepository
           - ImageTag
       - Label: AWS
         Parameters:
           - Region
 Resources:
-  CodeStarConnection:
-    Type: "AWS::CodeStarConnections::Connection"
+  TargetS3Bucket:
+    Type: AWS::S3::Bucket
     Properties:
-      ConnectionName: gh-ecr-connection
-      ProviderType: GitHub
+      BucketName: "ecr-image-result-bucket"
       Tags:
         - Key: "Name"
-          Value: "github-ecr-connection"
+          Value: "ECR-Image-Result-bucket"
         - Key: "CreatedBy"
           Value: "AWS CFN"
   ArtifactBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: artifacts-bucket-v1
+      BucketName: "artifacts-bucket-v2"
       VersioningConfiguration:
         Status: Enabled
       Tags:
         - Key: "Name"
-          Value: "artifacts-bucket-v1"
-        - Key: "CreatedBy"
-          Value: "AWS CFN"
-  ECRRepository:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: !Ref ImageRepository
-      Tags:
-        - Key: "Name"
-          Value: !Ref ImageRepository
+          Value: "artifacts-bucket-v2"
         - Key: "CreatedBy"
           Value: "AWS CFN"
   Pipeline:
     Type: AWS::CodePipeline::Pipeline
     Properties:
-      Name: ecr-pipeline
+      Name: "ecr-image-pipeline"
       RoleArn: !GetAtt PipelineRole.Arn
       ArtifactStore:
         Type: S3
         Location: !Ref ArtifactBucket
       Stages:
-        - Name: Get-Source-from-github
+        - Name: "get-image-from-ecr"
           Actions:
             - Name: Source
               ActionTypeId:
                 Category: Source
                 Owner: AWS
-                Provider: CodeStarSourceConnection
+                Provider: ECR
                 Version: "1"
-              OutputArtifacts:
-                - Name: SourceOutput
               Configuration:
-                ConnectionArn: !Ref CodeStarConnection
-                FullRepositoryId: !Ref GithubRepository
-                BranchName: !Ref Branch
+                RepositoryName: !Ref ECRRepository
+                ImageTag: !Ref ImageTag
+              OutputArtifacts:
+                - Name: "SourceArtifact"
               RunOrder: 1
-        - Name: Build-Docker-Image
+        - Name: "run-image"
           Actions:
             - Name: Build
               ActionTypeId:
@@ -98,41 +75,33 @@ Resources:
                 Owner: AWS
                 Provider: CodeBuild
                 Version: "1"
-              InputArtifacts:
-                - Name: SourceOutput
-              OutputArtifacts:
-                - Name: BuildOutput
               Configuration:
-                ProjectName: !Ref BuildProject
-              RunOrder: 1
+                ProjectName: !Ref CodeBuildProject
+              InputArtifacts:
+                - Name: "SourceArtifact"
+              OutputArtifacts:
+                - Name: "BuildArtifact"
       Tags:
         - Key: "Name"
-          Value: "ecr-pipeline"
+          Value: "ecr-image-pipeline"
         - Key: "CreatedBy"
           Value: "AWS CFN"
-  BuildProject:
+  CodeBuildProject:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: ecr-build-project
+      Name: ecr-run-project
       Artifacts:
         Type: CODEPIPELINE
         Name: "Artifacts"
       Environment:
         ComputeType: BUILD_GENERAL1_SMALL
-        Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
+        Image: public.ecr.aws/v7l7f0x0/custom-amazonlinux2:latest
         Type: LINUX_CONTAINER
         PrivilegedMode: true
-        EnvironmentVariables:
-          - Name: IMAGE_REPO_NAME
-            Value: !Ref ImageRepository
-          - Name: IMAGE_TAG
-            Value: !Ref ImageTag
-          - Name: REGION
-            Value: !Ref Region
-      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
       Source:
         Type: CODEPIPELINE
-        BuildSpec: buildspec.yml
+        BuildSpec: buildspec-dummy.yml
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
       Tags:
         - Key: "Name"
           Value: "ecr-build-project"
