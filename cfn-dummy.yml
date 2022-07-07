@@ -11,12 +11,16 @@ Parameters:
     Description: "ECR image tag to use"
   Region:
     Type: String
-    Default: us-east-1
+    Default: ap-south-1
     Description: "AWS region to use"
   TargetS3Bucket:
     Type: String
     Default: "ecr-image-result-bucket"
     Description: "S3 bucket to use"
+  AWSAccountId:
+    Type: String
+    Default: 123456789012
+    Description: "AWS account ID to use"
 Metadata:
   AWS:CloudFormation::Interface:
     ParameterGroups:
@@ -27,6 +31,7 @@ Metadata:
       - Label: AWS
         Parameters:
           - Region
+          - AWSAccountId
 Resources:
   S3Target:
     Type: AWS::S3::Bucket
@@ -113,7 +118,7 @@ Resources:
             pre_build:
               commands:
                 - touch result.txt
-                - cat ~/.bashrc
+                - source ~/.bashrc
             build:
               commands:
                 - python3.9 --version >> result.txt
@@ -167,3 +172,43 @@ Resources:
           Value: "CodeBuildServiceRole"
         - Key: "CreatedBy"
           Value: "AWS CFN"
+  AmazonCloudWatchEventRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Service:
+                - events.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /
+      Policies:
+        -
+          PolicyName: cwe-pipeline-execution
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              -
+                Effect: Allow
+                Action: codepipeline:StartPipelineExecution
+                Resource: !Sub arn:aws:codepipeline:${Region}:${AWSAccountId}:!Ref Pipeline
+  AmazonCloudWatchEventRule:
+    Type: 'AWS::Events::Rule'
+    Properties:
+      EventPattern:
+        detail:
+          action-type: [PUSH]
+          image-tag: [latest]
+          repository-name: [cwe-test]
+          result: [SUCCESS]
+        detail-type: [ECR Image Action]
+        source: [aws.ecr]
+      Targets:
+        - Arn: !Sub arn:aws:codepipeline:${Region}:${AWSAccountId}:!Ref Pipeline
+          RoleArn: !GetAtt 
+            - AmazonCloudWatchEventRole
+            - Arn
+          Id: codepipeline-dummy-target
