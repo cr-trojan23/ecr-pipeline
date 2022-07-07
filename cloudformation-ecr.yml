@@ -21,6 +21,10 @@ Parameters:
     Type: String
     Default: ap-south-1
     Description: AWS region to use.
+  AWSAccountId:
+    Type: String
+    Default: 314936303691
+    Description: AWS account ID to use.
 Metadata:
   AWS:CloudFormation::Interface:
     ParameterGroups:
@@ -35,6 +39,7 @@ Metadata:
       - Label: AWS
         Parameters:
           - Region
+          - AWSAccountId
 Resources:
   CodeStarConnection:
     Type: "AWS::CodeStarConnections::Connection"
@@ -129,6 +134,8 @@ Resources:
             Value: !Ref ImageTag
           - Name: REGION
             Value: !Ref Region
+          - Name: AWS_ACCOUNT_ID
+            Value: !Ref AWSAccountId
       ServiceRole: !GetAtt CodeBuildServiceRole.Arn
       Source:
         Type: CODEPIPELINE
