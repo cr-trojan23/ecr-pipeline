@@ -42,5 +42,6 @@ echo "[INFO] AWS CLI Installed Successfully"
 # Remove binaries, zips
 rm terraform_1.2.3_linux_amd64.zip awscliv2.zip aws-sam-cli-linux-x86_64.zip Python-3.9.13.tar.xz
 
+source ~/.bashrc
 
 
