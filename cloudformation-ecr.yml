@@ -28,12 +28,15 @@ Parameters:
     Type: String
     Default: public
     AllowedValues:
-      - "public"
-      - "private"
+      - public
+      - private
     Description: Repository visibility.
 
 Conditions:
-  IsRepoPrivate: !Equals
+  RepoIsPublic: !Equals
+      - !Ref RepoVisibility
+      - public
+  RepoIsPrivate: !Equals
       - !Ref RepoVisibility
       - private
 
@@ -76,7 +79,7 @@ Resources:
         - Key: "CreatedBy"
           Value: "AWS CFN"
   ECRPublicRepository:
-    Condition: !Not [IsRepoPrivate]
+    Condition: RepoIsPublic
     Type: AWS::ECR::PublicRepository
     Properties:
       RepositoryName: !Ref ImageRepository
@@ -99,7 +102,7 @@ Resources:
         - Key: "CreatedBy"
           Value: "AWS CFN"
   ECRPrivateRepository:
-    Condition: IsRepoPrivate
+    Condition: RepoIsPrivate
     Type: AWS::ECR::Repository
     Properties:
       RepositoryName: !Ref ImageRepository
