@@ -23,8 +23,20 @@ Parameters:
     Description: AWS region to use.
   AWSAccountId:
     Type: String
-    Default: 123456789012
     Description: AWS account ID to use.
+  RepoVisibility:
+    Type: String
+    Default: public
+    AllowedValues:
+      - "public"
+      - "private"
+    Description: Repository visibility.
+
+Conditions:
+  IsRepoPrivate: !Equals
+      - !Ref RepoVisibility
+      - private
+
 Metadata:
   AWS:CloudFormation::Interface:
     ParameterGroups:
@@ -36,6 +48,7 @@ Metadata:
         Parameters:
           - ImageRepository
           - ImageTag
+          - RepoVisibility
       - Label: AWS
         Parameters:
           - Region
@@ -62,7 +75,31 @@ Resources:
           Value: "pipeline-bucket-v1"
         - Key: "CreatedBy"
           Value: "AWS CFN"
-  ECRRepository:
+  ECRPublicRepository:
+    Condition: !Not [IsRepoPrivate]
+    Type: AWS::ECR::PublicRepository
+    Properties:
+      RepositoryName: !Ref ImageRepository
+      RepositoryPolicyText: 
+        Version: '2012-10-17'
+        Statement:
+        - Sid: CodeBuildAccess
+          Effect: Allow
+          Principal:
+            Service: codebuild.amazonaws.com
+          Action:
+          - ecr:BatchGetImage
+          - ecr:GetDownloadUrlForLayer
+          - ecr:BatchCheckLayerAvailability
+      Tags:
+        - Key: "Visibility"
+          Value: !Ref RepoVisibility
+        - Key: "Name"
+          Value: !Ref ImageRepository
+        - Key: "CreatedBy"
+          Value: "AWS CFN"
+  ECRPrivateRepository:
+    Condition: IsRepoPrivate
     Type: AWS::ECR::Repository
     Properties:
       RepositoryName: !Ref ImageRepository
@@ -78,6 +115,8 @@ Resources:
           - ecr:GetDownloadUrlForLayer
           - ecr:BatchCheckLayerAvailability
       Tags:
+        - Key: "Visibility"
+          Value: !Ref RepoVisibility
         - Key: "Name"
           Value: !Ref ImageRepository
         - Key: "CreatedBy"
@@ -147,6 +186,8 @@ Resources:
             Value: !Ref Region
           - Name: AWS_ACCOUNT_ID
             Value: !Ref AWSAccountId
+          - Name: REPO_VISIBILITY
+            Value: !Ref RepoVisibility
       ServiceRole: !GetAtt CodeBuildServiceRole.Arn
       Source:
         Type: CODEPIPELINE
